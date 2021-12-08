@@ -1,10 +1,7 @@
 import hw.DueDateCalculator;
-import hw.Main;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.*;
-
-import javax.security.auth.login.AccountLockedException;
 import java.util.*;
 import java.util.stream.Stream;
 
