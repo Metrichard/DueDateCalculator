@@ -14,30 +14,32 @@ public class DueDateCalculator {
     }};
 
     public Calendar CalculateDueDate(Calendar startingDateAndTime, int turnaroundTime) {
-        final int hourOfDay = startingDateAndTime.get(Calendar.HOUR_OF_DAY);
-        final int dayOfWeek = startingDateAndTime.get(Calendar.DAY_OF_WEEK);
+        final int startingHour = startingDateAndTime.get(Calendar.HOUR_OF_DAY);
+        final int startingDay = startingDateAndTime.get(Calendar.DAY_OF_WEEK);
         int dayOffset = 0;
 
-        if(hourOfDay < START_OF_DAY || END_OF_DAY < hourOfDay || !DAYS_OF_WEEK.contains(dayOfWeek))
+        if(startingHour < START_OF_DAY || END_OF_DAY < startingHour || !DAYS_OF_WEEK.contains(startingDay))
             throw new IllegalArgumentException("A due date is only to be issued from 9 o'clock to 17 o'clock on workdays.");
+        
+        if(turnaroundTime + startingHour > END_OF_DAY) {
+            int timeOffSet = turnaroundTime;
+            timeOffSet = timeOffSet - (END_OF_DAY - startingHour);
 
-        Calendar result = Calendar.getInstance();
-        if(turnaroundTime + hourOfDay > END_OF_DAY) {
-            int calculatedTime = turnaroundTime;
-            calculatedTime = calculatedTime - (END_OF_DAY - hourOfDay);
+            dayOffset = startingDay + dayOffset == Calendar.FRIDAY ? dayOffset + 4 : dayOffset + 1;
 
-            dayOffset = dayOfWeek + dayOffset == Calendar.FRIDAY ? dayOffset + 4 : dayOffset + 1;
-
-            while(calculatedTime + START_OF_DAY > END_OF_DAY) {
-                calculatedTime = calculatedTime - (END_OF_DAY - START_OF_DAY);
-                dayOffset = (dayOfWeek + dayOffset % 8) == Calendar.FRIDAY ? dayOffset + 4 : dayOffset + 1;
+            while(timeOffSet + START_OF_DAY > END_OF_DAY) {
+                timeOffSet = timeOffSet - (END_OF_DAY - START_OF_DAY);
+                dayOffset = (startingDay + dayOffset % 8) == Calendar.FRIDAY ? dayOffset + 4 : dayOffset + 1;
             }
-            result.set(Calendar.DAY_OF_WEEK, (dayOfWeek + dayOffset)%8);
-            result.set(Calendar.HOUR_OF_DAY, START_OF_DAY + calculatedTime);
-            return result;
+            return CreateResultCalendar((startingDay + dayOffset)%8, START_OF_DAY + timeOffSet);
         }
-        result.set(Calendar.DAY_OF_WEEK, dayOfWeek + dayOffset);
-        result.set(Calendar.HOUR_OF_DAY, hourOfDay + turnaroundTime);
+        return CreateResultCalendar(startingDay + dayOffset, startingHour + turnaroundTime);
+    }
+
+    private Calendar CreateResultCalendar(int day, int hour) {
+        Calendar result = Calendar.getInstance();
+        result.set(Calendar.DAY_OF_WEEK, day);
+        result.set(Calendar.HOUR_OF_DAY, hour);
         return result;
     }
 }
