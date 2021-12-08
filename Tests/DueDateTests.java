@@ -11,6 +11,7 @@ import java.util.stream.Stream;
 public class DueDateTests {
 
     private static DueDateCalculator dueDateCalculator;
+    private static Calendar calendar;
 
     private static Stream<Arguments> provideIntForValidSubmissions() {
         return Stream.of(
@@ -38,15 +39,33 @@ public class DueDateTests {
         );
     }
 
+    private static Stream<Arguments> provideArgumentsForNextWeekTests() {
+        return Stream.of(
+                Arguments.of(Calendar.FRIDAY, 10, 16, Calendar.TUESDAY, 10),
+                Arguments.of(Calendar.THURSDAY, 10, 24, Calendar.TUESDAY, 10),
+                Arguments.of(Calendar.WEDNESDAY, 10, 32, Calendar.TUESDAY, 10),
+                Arguments.of(Calendar.TUESDAY, 10, 40, Calendar.TUESDAY, 10),
+                Arguments.of(Calendar.MONDAY, 10, 48, Calendar.TUESDAY, 10)
+        );
+    }
+
+    private static Stream<Arguments> provideArgumentsForMultipleWeekTests() {
+        return Stream.of(
+                Arguments.of(Calendar.FRIDAY, 10, 56, Calendar.TUESDAY, 10),
+                Arguments.of(Calendar.FRIDAY, 10, 112, Calendar.THURSDAY, 10),
+                Arguments.of(Calendar.FRIDAY, 10, 168, Calendar.MONDAY, 10)
+        );
+    }
+
     @BeforeAll
     public static void SetUp(){
         dueDateCalculator = new DueDateCalculator();
+        calendar = Calendar.getInstance();
     }
 
     @ParameterizedTest
-    @ValueSource(ints = {1,2,3,4,5,6,7,8,18,19,20,21,22,23,24})
+    @ValueSource(ints = {1, 2, 3, 4, 5, 6, 7, 8, 18, 19, 20, 21, 22, 23, 24})
     public void CalculateDueDate_SubmitDateOutsideOfWorkHours_ThrowsIllegalArgumentException(int hour) {
-        Calendar calendar = Calendar.getInstance();
         calendar.set(Calendar.HOUR_OF_DAY, hour);
 
         Exception exception = Assertions.assertThrows(IllegalArgumentException.class ,() -> dueDateCalculator.CalculateDueDate(calendar, 8));
@@ -54,9 +73,8 @@ public class DueDateTests {
     }
 
     @ParameterizedTest
-    @ValueSource(ints = {1,7})
+    @ValueSource(ints = {Calendar.SATURDAY, Calendar.SUNDAY})
     public void CalculateDueDate_SubmitDateIsWeekend_ThrowsIllegalArgumentException(int day) {
-        Calendar calendar = Calendar.getInstance();
         calendar.set(Calendar.DAY_OF_WEEK, day);
 
         Exception exception = Assertions.assertThrows(IllegalArgumentException.class ,() -> dueDateCalculator.CalculateDueDate(calendar, 8));
@@ -66,7 +84,6 @@ public class DueDateTests {
     @ParameterizedTest
     @ValueSource(ints = {9, 10, 11, 12, 13, 14, 15, 16})
     public void CalculateDueDate_SubmitDatesHaveOneHourTurnAround_ReturnsDueDate(int hour) {
-        Calendar calendar = Calendar.getInstance();
         calendar.set(Calendar.HOUR_OF_DAY, hour);
 
         Assertions.assertEquals(calendar.get(Calendar.HOUR_OF_DAY)+1, dueDateCalculator.CalculateDueDate(calendar, 1).get(Calendar.HOUR_OF_DAY));
@@ -75,7 +92,6 @@ public class DueDateTests {
     @ParameterizedTest
     @MethodSource("provideIntForValidSubmissions")
     public void CalculateDueDate_SubmitHoursHaveMultipleValuesAsTurnAround_ReturnsDueDate(int hour, int turnAround) {
-        Calendar calendar = Calendar.getInstance();
         calendar.set(Calendar.HOUR_OF_DAY, hour);
 
         Assertions.assertEquals(calendar.get(Calendar.HOUR_OF_DAY)+turnAround, dueDateCalculator.CalculateDueDate(calendar, turnAround).get(Calendar.HOUR_OF_DAY));
@@ -84,21 +100,35 @@ public class DueDateTests {
     @ParameterizedTest
     @MethodSource("provideIntForValidSubmissionsOverEightHoursTurnaround")
     public void CalculateDueDate_SubmitHoursHaveMoreThanEightHoursOfTurnaround_ReturnsDueDate(int hour, int turnAround, int expectedDay, int expectedHour) {
-        Calendar calendar = Calendar.getInstance();
         calendar.set(Calendar.HOUR_OF_DAY, hour);
 
         Calendar result = dueDateCalculator.CalculateDueDate(calendar, turnAround);
-
-        var a = result.get(Calendar.DAY_OF_WEEK);
-        var b = result.get(Calendar.HOUR_OF_DAY);
 
         Assertions.assertEquals(result.get(Calendar.DAY_OF_WEEK), expectedDay);
         Assertions.assertEquals(result.get(Calendar.HOUR_OF_DAY), expectedHour);
     }
 
     @ParameterizedTest
+    @MethodSource("provideArgumentsForNextWeekTests")
+    public void CalculateDueDate_SubmitDueDateWouldEndOnWeekend_ReturnsDueDateOnNextWeek(int day, int hour, int turnaround, int expectedDay, int expectedHour) {
+        calendar.set(Calendar.DAY_OF_WEEK, day);
+        calendar.set(Calendar.HOUR_OF_DAY, hour);
 
-    public void CalculateDueDate_SubmitIsOnFridayAndWouldEndOnWeekend_ReturnsDueDateOnNextWeek() {
+        Calendar result = dueDateCalculator.CalculateDueDate(calendar, turnaround);
 
+        Assertions.assertEquals(expectedDay, result.get(Calendar.DAY_OF_WEEK));
+        Assertions.assertEquals(expectedHour, result.get(Calendar.HOUR_OF_DAY));
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideArgumentsForMultipleWeekTests")
+    public void CalculateDueDate_SubmitDueDateIsMultipleWeeksAway_ReturnsDueDateMultipleWeeksLater(int day, int hour, int turnaround, int expectedDay, int expectedHour) {
+        calendar.set(Calendar.DAY_OF_WEEK, day);
+        calendar.set(Calendar.HOUR_OF_DAY, hour);
+
+        Calendar result = dueDateCalculator.CalculateDueDate(calendar, turnaround);
+
+        Assertions.assertEquals(expectedDay, result.get(Calendar.DAY_OF_WEEK));
+        Assertions.assertEquals(expectedHour, result.get(Calendar.HOUR_OF_DAY));
     }
 }

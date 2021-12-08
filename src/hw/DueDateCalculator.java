@@ -15,8 +15,8 @@ public class DueDateCalculator {
 
     public Calendar CalculateDueDate(Calendar startingDateAndTime, int turnaroundTime)
     {
-        int hourOfDay = startingDateAndTime.get(Calendar.HOUR_OF_DAY);
-        int dayOfWeek = startingDateAndTime.get(Calendar.DAY_OF_WEEK);
+        final int hourOfDay = startingDateAndTime.get(Calendar.HOUR_OF_DAY);
+        final int dayOfWeek = startingDateAndTime.get(Calendar.DAY_OF_WEEK);
         int dayOffset = 0;
 
 
@@ -27,26 +27,30 @@ public class DueDateCalculator {
         Calendar result = Calendar.getInstance();
         if(turnaroundTime + hourOfDay > END_OF_DAY) {
             int calculatedTime = turnaroundTime;
-            dayOffset++;
             calculatedTime = calculatedTime - (END_OF_DAY - hourOfDay);
 
-            while(calculatedTime + START_OF_DAY > END_OF_DAY) {
+            if(dayOfWeek + dayOffset == Calendar.FRIDAY)
+                dayOffset = dayOffset + 4;
+            else
                 dayOffset++;
+
+
+            while(calculatedTime + START_OF_DAY > END_OF_DAY) {
+
                 calculatedTime = calculatedTime - (END_OF_DAY - START_OF_DAY);
+                if((dayOfWeek + dayOffset % 8) == Calendar.FRIDAY)
+                    dayOffset = dayOffset + 4;
+                else
+                    dayOffset++;
             }
 
-
-
-            int weekendOffset = (startingDateAndTime.get(Calendar.DAY_OF_WEEK) - startingDateAndTime.get(Calendar.DAY_OF_WEEK)+dayOffset) * -1;
-            if(weekendOffset > 0) dayOffset += weekendOffset;
-
-            result.set(Calendar.DAY_OF_MONTH, startingDateAndTime.get(Calendar.DAY_OF_MONTH) + dayOffset);
+            result.set(Calendar.DAY_OF_WEEK, (dayOfWeek + dayOffset)%8);
             result.set(Calendar.HOUR_OF_DAY, START_OF_DAY + calculatedTime);
         }
         else {
 
-            result.set(Calendar.DAY_OF_WEEK, startingDateAndTime.get(Calendar.DAY_OF_WEEK) + dayOffset);
-            result.set(Calendar.HOUR_OF_DAY, startingDateAndTime.get(Calendar.HOUR_OF_DAY) + turnaroundTime);
+            result.set(Calendar.DAY_OF_WEEK, dayOfWeek + dayOffset);
+            result.set(Calendar.HOUR_OF_DAY, hourOfDay + turnaroundTime);
         }
 
         return result;
